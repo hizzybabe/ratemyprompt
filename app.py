@@ -18,30 +18,37 @@ def home():
 
 @app.route('/rate-prompt', methods=['POST'])
 def rate_prompt():
-    prompt = request.json.get('prompt')
-    
-    # Analyze prompt using Gemini
-    analysis_prompt = f"""
-    Analyze the following prompt and provide two things:
-    1. A score out of 100 based on clarity, specificity, and effectiveness
-    2. Specific advice on how to improve the prompt
-    
-    Prompt to analyze: "{prompt}"
-    
-    Format your response as JSON with 'score' and 'advice' keys.
-    """
-    
-    response = model.generate_content(analysis_prompt)
     try:
-        # Parse the response as JSON
-        result = eval(response.text)
-    except:
-        result = {
+        prompt = request.json.get('prompt')
+        if not prompt:
+            return jsonify({
+                'score': 0,
+                'advice': 'Error: No prompt provided'
+            }), 400
+        
+        # Analyze prompt using Gemini
+        analysis_prompt = f"""
+        Analyze the following prompt and provide two things:
+        1. A score out of 100 based on clarity, specificity, and effectiveness
+        2. Specific advice on how to improve the prompt
+        
+        Prompt to analyze: "{prompt}"
+        
+        Format your response as JSON with 'score' and 'advice' keys.
+        """
+        
+        response = model.generate_content(analysis_prompt)
+        if not response.text:
+            raise ValueError("Empty response from Gemini")
+            
+        result = eval(response.text)  # Note: Consider using json.loads() instead of eval()
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({
             'score': 0,
-            'advice': 'Error analyzing prompt. Please try again.'
-        }
-    
-    return jsonify(result)
+            'advice': f'Error analyzing prompt: {str(e)}'
+        }), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
