@@ -31,19 +31,39 @@ def rate_prompt():
         Analyze the following prompt and provide two things:
         1. A score out of 100 based on clarity, specificity, and effectiveness
         2. Specific advice on how to improve the prompt
-        
+
         Prompt to analyze: "{prompt}"
-        
-        Format your response as JSON with 'score' and 'advice' keys.
+
+        Respond strictly in this JSON format:
+        {{"score": <number>, "advice": "<string>"}}
         """
         
         response = model.generate_content(analysis_prompt)
         if not response.text:
             raise ValueError("Empty response from Gemini")
-            
-        result = eval(response.text)  # Note: Consider using json.loads() instead of eval()
-        return jsonify(result)
         
+        # Clean and parse the response
+        try:
+            # Remove any potential markdown formatting or extra whitespace
+            cleaned_text = response.text.strip().strip('`').strip()
+            if cleaned_text.startswith('json'):
+                cleaned_text = cleaned_text[4:].strip()
+            
+            import json
+            result = json.loads(cleaned_text)
+            
+            # Validate the response format
+            if not isinstance(result.get('score'), (int, float)) or not isinstance(result.get('advice'), str):
+                raise ValueError("Invalid response format")
+                
+            return jsonify(result)
+            
+        except json.JSONDecodeError as e:
+            return jsonify({
+                'score': 0,
+                'advice': f'Error parsing response: Invalid JSON format'
+            }), 500
+            
     except Exception as e:
         return jsonify({
             'score': 0,
