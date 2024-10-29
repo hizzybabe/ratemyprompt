@@ -1,3 +1,5 @@
+![RateMyPrompt Banner](banner.png)
+
 # AI Prompt Rater
 
 A web application that helps users improve their AI prompts by providing ratings and specific feedback using Google's Gemini AI.
